@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CampusLost</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2f5;--card:#fff;--ink:#0e2433;--mute:#5b6f7e;--line:#d4dde4;--lost:#f2b705;--found:#0f8b8d;--ok:#1a7f4b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1822;--card:#122533;--ink:#e8f0f5;--mute:#93a8b6;--line:#244053;--ok:#4cc58a}}
+:root[data-theme="dark"]{--bg:#0b1822;--card:#122533;--ink:#e8f0f5;--mute:#93a8b6;--line:#244053;--ok:#4cc58a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 Figtree,system-ui,sans-serif}
+main{max-width:720px;margin:0 auto;padding:20px 16px 48px}
+h1,h2{font-family:'Bricolage Grotesque',Figtree,sans-serif;margin:0;letter-spacing:-.02em}
+h1{font-size:2.4rem;font-weight:800}
+h2{font-size:1.35rem;font-weight:700;margin:32px 0 12px}
+.sub{color:var(--mute);margin:4px 0 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.seg button{font:700 1rem 'Bricolage Grotesque',sans-serif;padding:12px;border-radius:10px;border:2px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.seg button[aria-pressed=true].l{background:var(--lost);border-color:var(--lost);color:#2a2000}
+.seg button[aria-pressed=true].f{background:var(--found);border-color:var(--found);color:#fff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-size:.85rem;color:var(--mute);margin-bottom:4px}
+select,input,textarea{width:100%;font:inherit;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.full{grid-column:1/-1}
+:focus-visible{outline:3px solid var(--found);outline-offset:2px}
+.go{margin-top:14px;width:100%;font:700 1rem 'Bricolage Grotesque',sans-serif;padding:13px;border:0;border-radius:10px;background:var(--ink);color:var(--bg);cursor:pointer}
+.match{display:grid;grid-template-columns:84px 1fr;gap:14px;margin-bottom:12px}
+.ring{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--ok) calc(var(--p)*1%),var(--line) 0)}
+.ring span{width:66px;height:66px;border-radius:50%;background:var(--card);display:grid;place-items:center;font:800 1.2rem 'Bricolage Grotesque',sans-serif}
+.checks{list-style:none;margin:8px 0 0;padding:0;font-size:.9rem}
+.checks li.y::before{content:"✓ ";color:var(--ok);font-weight:700}
+.checks li.n{color:var(--mute)}.checks li.n::before{content:"✗ "}
+.pair{font-size:.9rem;color:var(--mute)}
+.tag{display:inline-block;font-weight:700;font-size:.78rem;padding:2px 8px;border-radius:99px}
+.tag.lost{background:var(--lost);color:#2a2000}.tag.found{background:var(--found);color:#fff}
+.item{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.item button{background:none;border:0;color:var(--mute);cursor:pointer;font:inherit;text-decoration:underline}
+#prev{width:100%;max-width:260px;height:auto;max-height:260px;object-fit:contain}
+#camBox[hidden]{display:none}
+.thumb{display:block;width:96px;height:96px;object-fit:cover;border-radius:8px;margin-top:8px;border:1px solid var(--line)}
+.thumb[hidden]{display:none}
+.ai{margin-top:8px;font:600 .95rem Figtree,sans-serif;padding:8px 12px;border-radius:8px;border:2px solid var(--found);background:transparent;color:var(--ink);cursor:pointer}
+.ai[hidden]{display:none}
+.empty{color:var(--mute)}
+.reset{margin-top:18px;background:none;border:0;color:var(--mute);text-decoration:underline;cursor:pointer;font:inherit}
+@media(max-width:420px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<h1>CampusLost</h1>
+<p class="sub">Report what you lost or found. We compare every report and flag likely matches.</p>
+
+<h2>New report</h2>
+<div class="card">
+  <div class="seg" id="seg">
+    <button class="l" data-k="lost" aria-pressed="true">I lost something</button>
+    <button class="f" data-k="found" aria-pressed="false">I found something</button>
+  </div>
+  <div class="grid">
+    <div><label for="type">Item type</label><select id="type"></select></div>
+    <div><label for="color">Colour</label><select id="color"></select></div>
+    <div><label for="loc">Location</label><select id="loc"></select></div>
+    <div><label for="time">Time</label><input id="time" type="time" value="14:00"></div>
+    <div class="full"><label for="photo">Photo</label>
+      <input id="photo" type="file" accept="image/*" capture="environment">
+      <button type="button" class="ai" id="cam" hidden>Open live camera</button>
+      <div id="camBox" hidden>
+        <video id="vid" playsinline muted style="width:100%;max-width:360px;border-radius:10px;margin-top:8px;background:#000"></video>
+        <div><button type="button" class="ai" id="snap">Capture</button> <button type="button" class="ai" id="stopcam">Cancel</button></div>
+      </div>
+      <img id="prev" class="thumb" alt="Photo preview" hidden>
+      <button type="button" class="ai" id="ai" hidden>Fill details from photo</button>
+      <span class="pair" id="aimsg" role="status"></span></div>
+    <div class="full"><label for="desc">Details (material, brand, marks)</label><textarea id="desc" rows="2" placeholder="Leather wallet with a silver clip"></textarea></div>
+  </div>
+  <button class="go" id="add">Submit report</button>
+</div>
+
+<h2>Possible matches</h2>
+<div id="matches"></div>
+
+<h2>All reports</h2>
+<div class="card" id="all"></div>
+<button class="reset" id="reset">Reset demo data</button>
+</main>
+
+<script>
+var TYPES=["Wallet","Phone","ID card","Keys","Bag","Laptop or charger","Bottle","Other"];
+var COLORS=["Black","Blue","Red","Brown","White","Grey","Green","Other"];
+var LOCS=["Library","Canteen","Main gate","Hostel","Lab block","Sports ground","Auditorium"];
+var SEED=[
+{id:1,kind:"lost",type:"Wallet",color:"Black",loc:"Library",time:"14:00",desc:"Black leather wallet"},
+{id:2,kind:"found",type:"Wallet",color:"Black",loc:"Library",time:"14:15",desc:"Found a black leather wallet near the entrance"},
+{id:3,kind:"lost",type:"Keys",color:"Grey",loc:"Canteen",time:"13:00",desc:"Bike key with a red keychain"},
+{id:4,kind:"found",type:"Bottle",color:"Grey",loc:"Lab block",time:"16:30",desc:"Steel water bottle"}];
+var data=[],kind="lost";
+
+function load(){try{var s=localStorage.getItem("campuslost");if(s)return JSON.parse(s)}catch(e){}return SEED.slice()}
+function save(){try{localStorage.setItem("campuslost",JSON.stringify(data))}catch(e){}}
+function $(id){return document.getElementById(id)}
+function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML}
+function fill(id,arr){$(id).innerHTML=arr.map(function(v){return "<option>"+v+"</option>"}).join("")}
+function mins(t){var p=t.split(":");return +p[0]*60+ +p[1]}
+function words(s){return s.toLowerCase().split(/[^a-z0-9]+/).filter(function(w){return w.length>2})}
+
+function score(a,b){
+  var sType=a.type===b.type, sColor=a.color===b.color;
+  var wa=words(a.desc),wb=words(b.desc),common=wa.filter(function(w){return wb.indexOf(w)>-1});
+  var overlap=wa.length&&wb.length?common.length/Math.max(wa.length,wb.length):0;
+  var sLoc=a.loc===b.loc, diff=Math.abs(mins(a.time)-mins(b.time));
+  var pts=(sType?30:0)+(sColor?15:0)+Math.round(overlap*10)+(sLoc?25:0)+(diff<=30?20:diff<=120?10:0);
+  return {pct:Math.min(100,pts),checks:[
+    [sType,"Same item type"],[sColor||overlap>=.3,"Similar colour/material"],
+    [sLoc,"Same location"],[diff<=60,"Similar time"]]};
+}
+
+function render(){
+  var lost=data.filter(function(r){return r.kind==="lost"}),found=data.filter(function(r){return r.kind==="found"});
+  var pairs=[];
+  lost.forEach(function(l){found.forEach(function(f){var s=score(l,f);if(s.pct>=50)pairs.push({l:l,f:f,s:s})})});
+  pairs.sort(function(a,b){return b.s.pct-a.s.pct});
+  $("matches").innerHTML=pairs.length?pairs.map(function(p){
+    return '<div class="card match"><div class="ring" style="--p:'+p.s.pct+'"><span>'+p.s.pct+'%</span></div><div>'
+    +'<div><span class="tag lost">Lost</span> <span class="pair">'+esc(p.l.desc||p.l.type)+' · '+esc(p.l.loc)+' · '+p.l.time+'</span></div>'
+    +'<div style="margin-top:4px"><span class="tag found">Found</span> <span class="pair">'+esc(p.f.desc||p.f.type)+' · '+esc(p.f.loc)+' · '+p.f.time+'</span></div>'
+    +(p.l.photo?'<img class="thumb" style="display:inline-block;margin-right:6px" alt="Lost item" src="'+p.l.photo+'">':'')
+    +(p.f.photo?'<img class="thumb" style="display:inline-block" alt="Found item" src="'+p.f.photo+'">':'')
+    +'<ul class="checks">'+p.s.checks.map(function(c){return '<li class="'+(c[0]?"y":"n")+'">'+c[1]+'</li>'}).join("")+'</ul></div></div>';
+  }).join(""):'<p class="empty">No matches yet. When a lost and a found report look alike, they show up here.</p>';
+  $("all").innerHTML=data.length?data.map(function(r){
+    return '<div class="item"><div><span class="tag '+r.kind+'">'+(r.kind==="lost"?"Lost":"Found")+'</span> <strong>'+esc(r.type)+'</strong>, '+esc(r.color)
+    +'<div class="pair">'+esc(r.desc)+'<br>'+esc(r.loc)+' at '+r.time+'</div>'+(r.photo?'<img class="thumb" alt="Item photo" src="'+r.photo+'">':'')+'</div><button data-id="'+r.id+'">Delete</button></div>';
+  }).join(""):'<p class="empty">No reports yet. Submit one above.</p>';
+}
+
+fill("type",TYPES);fill("color",COLORS);fill("loc",LOCS);
+data=load();render();
+
+$("seg").addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;kind=b.dataset.k;
+  Array.prototype.forEach.call($("seg").children,function(x){x.setAttribute("aria-pressed",x===b)});
+});
+var photo="",file=null,sample=null;
+(async function(){
+  try{
+    sample=await claude.use("sample");
+    if(sample&&(await sample.limits()).images&&file)$("ai").hidden=false;
+  }catch(e){sample=null}
+})();
+$("ai").addEventListener("click",async function(){
+  if(!file||!sample)return;
+  var btn=this,msg=$("aimsg");btn.disabled=true;msg.textContent="Reading photo...";
+  try{
+    var r=await sample.json("This photo shows a lost or found item on a university campus. Reply with only JSON: {\"type\":one of "+JSON.stringify(TYPES)+",\"color\":one of "+JSON.stringify(COLORS)+",\"desc\":\"short description with material, brand or marks, max 12 words\"}",{images:file,modelTier:"quick"});
+    if(TYPES.indexOf(r.type)>-1)$("type").value=r.type;
+    if(COLORS.indexOf(r.color)>-1)$("color").value=r.color;
+    if(r.desc)$("desc").value=String(r.desc).slice(0,120);
+    msg.textContent="Filled in. Check the details before submitting.";
+  }catch(e){msg.textContent=e&&e.code==="not_granted"?"Photo reading was declined.":"Couldn't read the photo. Fill in the details by hand."}
+  btn.disabled=false;
+});
+function setFile(f){
+  photo="";file=f||null;$("prev").hidden=true;$("aimsg").textContent="";
+  $("ai").hidden=!(f&&sample);if(!f)return;
+  var img=new Image(),url=URL.createObjectURL(f);
+  img.onload=function(){
+    var s=Math.min(1,320/Math.max(img.width,img.height)),c=document.createElement("canvas");
+    c.width=img.width*s;c.height=img.height*s;c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+    photo=c.toDataURL("image/jpeg",.6);$("prev").src=photo;$("prev").hidden=false;URL.revokeObjectURL(url);
+  };
+  img.src=url;
+}
+$("photo").addEventListener("change",function(){setFile(this.files[0])});
+
+var stream=null;
+function stopCam(){
+  if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}
+  $("camBox").hidden=true;
+}
+if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)$("cam").hidden=false;
+$("cam").addEventListener("click",async function(){
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
+    $("vid").srcObject=stream;$("camBox").hidden=false;await $("vid").play();
+  }catch(e){
+    stopCam();
+    $("aimsg").textContent="Live camera isn't available here. Use the Photo field above instead.";
+  }
+});
+$("snap").addEventListener("click",function(){
+  var v=$("vid");if(!v.videoWidth)return;
+  var c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;
+  c.getContext("2d").drawImage(v,0,0);
+  c.toBlob(function(b){stopCam();if(b)setFile(new File([b],"capture.jpg",{type:"image/jpeg"}))},"image/jpeg",.9);
+});
+$("stopcam").addEventListener("click",stopCam);
+$("add").addEventListener("click",function(){
+  data.push({id:Date.now(),kind:kind,type:$("type").value,color:$("color").value,loc:$("loc").value,time:$("time").value||"12:00",desc:$("desc").value.trim(),photo:photo});
+  $("desc").value="";$("photo").value="";$("prev").hidden=true;$("ai").hidden=true;$("aimsg").textContent="";photo="";file=null;save();render();
+});
+$("all").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-id]");if(!b)return;
+  data=data.filter(function(r){return String(r.id)!==b.dataset.id});save();render();
+});
+$("reset").addEventListener("click",function(){data=SEED.slice();save();render()});
+</script>
+</body>
+</html>
